@@ -1,3 +1,4 @@
+# test 2 of git
 # Strategy 1:
 # Generate data after each epoch of training, if less than
 # 10% error rate, and is a legit SMILES
