@@ -727,8 +727,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiment/regular/Regular_12.csv', index = False)
-output2.to_csv('./../experiment/regular/Regular_NODUP_12.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_12.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_12.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """
