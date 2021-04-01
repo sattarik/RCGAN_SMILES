@@ -103,6 +103,20 @@ X_smiles_train = X_smiles_train[idx]
 X_atoms_train = X_atoms_train[idx]
 X_bonds_train = X_bonds_train[idx]
 
+
+# Outlier removal
+IQR = - np.quantile(y_val, 0.25) + np.quantile(y_val, 0.75)
+
+lower_bound, upper_bound = np.quantile(y_val, 0.25) - 1.5 * IQR, np.quantile(y_val, 0.75) + 1.5 * IQR
+
+idx = np.where((y_val >= lower_bound) & (y_val <= upper_bound))
+
+y_val = y_val[idx]
+X_smiles_val = X_smiles_val[idx]
+X_atoms_val = X_atoms_val[idx]
+X_bonds_val = X_bonds_val[idx]
+
+
 def norm(X: ndarray) -> ndarray:
     X = np.where(X == 0, -1.0, 1.0)
     return X
@@ -120,7 +134,14 @@ def y_norm(y: ndarray) -> ndarray:
     
     return y, scaler_min, scaler_max
 
-__, s_min, s_max = y_norm(y_train)
+s_min1 = np.min (y_train)
+s_max1 = np.max (y_train)
+
+s_min2 = np.min(y_val)
+s_max2 = np.max(y_val)
+s_min = min(s_min1, s_min2)
+s_max = max(s_max1, s_max2)
+
 y_val = (y_val - s_min) / (s_max - s_min)
 print ("min and max train data and test normalized", s_min, s_max, np.min(y_val), np.max(y_val))
 # define s_min and s_max between 10-7s_max = 50
@@ -128,8 +149,8 @@ print ("min and max train data and test normalized", s_min, s_max, np.min(y_val)
 y_train = (y_train - s_min) / (s_max - s_min)
 print ("min and max train data and train normalized", s_min, s_max, np.min(y_train), np.max(y_train))
 
-encoder = load_model('encoder.h5')
-decoder = load_model('decoder.h5')
+encoder = load_model('./../data/nns/encoder.h5')
+decoder = load_model('./../data/nns/decoder.h5')
 
 class Config:
     
@@ -272,8 +293,8 @@ train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_atoms_train
 atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
 atoms_val, bonds_val, _ = encoder.predict([X_atoms_val, X_bonds_val])
 
-regressor = load_model('regressor.h5')
-regressor_top = load_model('regressor_top.h5')
+regressor = load_model('./../data/nns/regressor.h5')
+regressor_top = load_model('./../data/nns/regressor_top.h5')
 
 regressor.fit([atoms_embedding, bonds_embedding], 
               y_train,
@@ -298,11 +319,11 @@ print('Current R2 on Regressor for validation data: {}'.format(r2_score(y_val, p
 print ("pred of validation data: ", pred )
 print ("True validation values: ", y_val)
 # Saving the currently trained models
-regressor.save('regressor.h5')
-regressor_top.save('regressor_top.h5')
+regressor.save('./../data/nns/regressor.h5')
+regressor_top.save('./../data/nns/regressor_top.h5')
 
-regressor = load_model('regressor.h5')
-regressor_top = load_model('regressor_top.h5')
+regressor = load_model('./../data/nns/regressor.h5')
+regressor_top = load_model('./../data/nns/regressor_top.h5')
 #generator = load_model ('generator.h5')
 #discriminator= load_model ('discriminator.h5')
 
@@ -387,7 +408,7 @@ for e in range(epochs):
     gen_smiles = []
     embeddings = []
     sample_ys = []
-    for _ in range(100):
+    for _ in range(1000):
         #sample_y = np.random.uniform(s_min, s_max, size = [1,])
         sample_y = np.random.uniform(s_min, s_max, size = [1,])
         sample_y = np.round(sample_y, 4)
@@ -452,7 +473,7 @@ for e in range(epochs):
         reinforce_n += 10
     
     # invalid smiles:
-    fake_indices = np.setdiff1d(np.arange(100), np.asarray(idx_))
+    fake_indices = np.setdiff1d(np.arange(1000), np.asarray(idx_))
     fake_indices = np.random.choice(fake_indices, reinforce_n * 5, replace = False)
     
     real_indices_ = np.intersect1d(np.where(gen_error < threshold)[0], idx_)
@@ -507,8 +528,8 @@ with open('GAN_loss.pickle', 'wb') as f:
 # Saving the currently trained models
 #regressor.save('regressor.h5')
 #regressor_top.save('regressor_top.h5')
-generator.save('generator.h5')
-discriminator.save('discriminator.h5')
+generator.save('./../data/nns/generator.h5')
+discriminator.save('./../data/nns/discriminator.h5')
 
 ##====#
 
@@ -519,8 +540,8 @@ discriminator.save('discriminator.h5')
 #generator = load_model('generator.h5')
 #discriminator = load_model('discriminator.h5')
 
-encoder = load_model('encoder.h5')
-decoder = load_model('decoder.h5')
+encoder = load_model('./../data/nns/encoder.h5')
+decoder = load_model('./../data/nns/decoder.h5')
 
 # Generation workflow
 # 1. Given a desired heat capacity
