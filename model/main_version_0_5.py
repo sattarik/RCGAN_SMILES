@@ -78,13 +78,13 @@ random.seed(12345)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 #K.set_session(sess)
 
-with open('./../data/dataset/60000_regular_qm9/image_train.pickle', 'rb') as f:
+with open('/home/ks29c/data/trainingsets/60000_train_regular_qm9/image_train.pickle', 'rb') as f:
     X_smiles_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
     
-with open('./../data/dataset/60000_regular_qm9/image_test.pickle', 'rb') as f:
+with open('/home/ks29c/data/trainingsets/60000_train_regular_qm9/image_test.pickle', 'rb') as f:
     X_smiles_val, X_atoms_val, X_bonds_val, y_val = pickle.load(f)
 
-with open('./../data/dataset/60000_regular_qm9/tokenizer.pickle', 'rb') as f:
+with open('/home/ks29c/data/trainingsets/60000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
     tokenizer = pickle.load(f)
     
 tokenizer[0] = ' '
