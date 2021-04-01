@@ -278,7 +278,7 @@ def build_combined(z, y,
 
     combined.compile(loss = ['binary_crossentropy',
                              'mse'], 
-                     loss_weights = [0.0, 50.0], 
+                     loss_weights = [1.0, 25.0], 
                      optimizer = Adam(5e-6, beta_1 = 0.5))
 
     return combined
@@ -330,11 +330,11 @@ regressor_top = load_model('./../data/nns/regressor_top.h5')
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 1
+epochs = 100
 batch_size = 128
-threshold = 0.2
+threshold = 0.3
 
-reinforce_n = 5
+reinforce_n = 50
 
 batches = y_train.shape[0] // batch_size
 
@@ -560,8 +560,8 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
 	        (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 
-N = 70
-n_sample = 100
+N = 100
+n_sample = 1000
 
 gen_error = []
 gen_smiles = []
