@@ -682,7 +682,6 @@ print ("Fractioned_RMSE_DFT_des", Fractioned_RMSE_DFT_des)
 output = pd.DataFrame(output)
 # do not drop duplicate
 output2 = output.drop_duplicates(['SMILES'])
-
 gen_atoms_embedding = np.array(gen_atoms_embedding)
 gen_bonds_embedding = np.array(train_atoms_embedding)
 
