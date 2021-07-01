@@ -278,7 +278,7 @@ def build_combined(z, y,
 
     combined.compile(loss = ['binary_crossentropy',
                              'mse'], 
-                     loss_weights = [1.0, 25.0], 
+                     loss_weights = [1.0, 40.0], 
                      optimizer = Adam(5e-6, beta_1 = 0.5))
 
     return combined
@@ -330,8 +330,8 @@ regressor_top = load_model('./../data/nns/regressor_top.h5')
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 100
-batch_size = 128
+epochs = 20
+batch_size = 60
 threshold = 0.3
 
 reinforce_n = 50
