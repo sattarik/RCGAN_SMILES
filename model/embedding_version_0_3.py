@@ -54,15 +54,15 @@ random.seed(12345)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 #K.set_session(sess)
 
-with open('image_train.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/image_train.pickle', 'rb') as f:
     X_smiles_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
 
-with open('image_test.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/image_test.pickle', 'rb') as f:
     X_smiles_test, X_atoms_test, X_bonds_test, y_test = pickle.load(f)
 
 # Subsampling has been done in the data preprocesses
 X_smiles_train.shape, X_smiles_test.shape
-
+"""
 # Outlier removal
 IQR = - np.quantile(y_train, 0.25) + np.quantile(y_train, 0.75)
 
@@ -74,7 +74,7 @@ y_train = y_train[idx]
 X_smiles_train = X_smiles_train[idx]
 X_atoms_train = X_atoms_train[idx]
 X_bonds_train = X_bonds_train[idx]
-
+"""
 def norm(X: ndarray) -> ndarray:
     X = np.where(X == 0, -1.0, 1.0)
     return X
@@ -92,11 +92,20 @@ sns.distplot(y_test, norm_hist = True)
 plt.savefig('hc_test.png')
 
 # Normalize y_train, y_test
-s_min, s_max = np.min(y_train), np.max(y_train)
+s_min1 = np.min (y_train)
+s_max1 = np.max (y_train)
+
+s_min2 = np.min(y_test)
+s_max2 = np.max(y_test)
+s_min = min(s_min1, s_min2)
+s_max = max(s_max1, s_max2)
 #s_min, s_max = 20, 50
+
 y_train = (y_train - s_min) / (s_max - s_min)
 y_test = (y_test - s_min) / (s_max - s_min)
 
+print ("min and max train data and test normalized", s_min, s_max, np.min(y_test), np.max(y_test))
+print ("min and max train data and train normalized", s_min, s_max, np.min(y_train), np.max(y_train))
 # Encoding to an image embedding
 
 # ENCODER
@@ -234,9 +243,9 @@ model.fit([X_atoms_train, X_bonds_train],
                     batch_size = 32,
                     verbose = 1)
 """
-encoder = load_model('encoder.h5')
-decoder = load_model('decoder.h5')
-model = load_model('ae_model.h5')
+encoder = load_model('./../data/nns/encoder.h5')
+decoder = load_model('./../data/nns/decoder.h5')
+model = load_model  ('./../data/nns/ae_model.h5')
 """
 model.compile(optimizer = Adam(learning_rate = 9e-5),
               loss = ['binary_crossentropy', 'mse'])
@@ -267,6 +276,6 @@ for i in [5, 10, 32, 88, 99]:
     plt.show()
     plt.savefig("smiles_{}_test.png".format(i))
 
-model.save('ae_model.h5')
-encoder.save('encoder.h5')
-decoder.save('decoder.h5')
+model.save('./../data/nns/ae_model.h5')
+encoder.save('./../data/nns/encoder.h5')
+decoder.save('./../data/nns/decoder.h5')

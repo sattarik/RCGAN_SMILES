@@ -78,19 +78,19 @@ random.seed(12345)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 #K.set_session(sess)
 
-with open('./../data/trainingsets/60000_train_regular_qm9/image_train.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/image_train.pickle', 'rb') as f:
     X_smiles_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
     
-with open('./../data/trainingsets/60000_train_regular_qm9/image_test.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/image_test.pickle', 'rb') as f:
     X_smiles_val, X_atoms_val, X_bonds_val, y_val = pickle.load(f)
 
-with open('./../data/trainingsets/60000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
     tokenizer = pickle.load(f)
     
 tokenizer[0] = ' '
 
 # Subsampling has been done in the data preprocesses
-
+"""
 # Outlier removal
 IQR = - np.quantile(y_train, 0.25) + np.quantile(y_train, 0.75)
 
@@ -115,7 +115,7 @@ y_val = y_val[idx]
 X_smiles_val = X_smiles_val[idx]
 X_atoms_val = X_atoms_val[idx]
 X_bonds_val = X_bonds_val[idx]
-
+"""
 
 def norm(X: ndarray) -> ndarray:
     X = np.where(X == 0, -1.0, 1.0)
@@ -215,7 +215,7 @@ O_dis = Dense(1, activation = 'sigmoid')(y2)
 
 
 discriminator = Model([X, y], O_dis)
-discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 5e-6, beta_1 = 0.5))
+discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 5e-7, beta_1 = 0.5))
 print (discriminator.summary()) 
 # Regressor
 inp1 = Input(shape = [6, 6, 1])
@@ -267,8 +267,10 @@ def build_combined(z, y,
                    discriminator):
     atoms_emb, bonds_emb = generator([z, y])
 
+    
     discriminator.trainable = False
     regressor_top.trainable = False
+    regressor.trainable = False
 
     y_pred = regressor([atoms_emb, bonds_emb])
     latent = regressor_top([atoms_emb, bonds_emb])
@@ -278,8 +280,8 @@ def build_combined(z, y,
 
     combined.compile(loss = ['binary_crossentropy',
                              'mse'], 
-                     loss_weights = [1.0, 40.0], 
-                     optimizer = Adam(5e-6, beta_1 = 0.5))
+                     loss_weights = [1.0, 25.0], 
+                     optimizer = Adam(5e-7, beta_1 = 0.5))
 
     return combined
 
@@ -293,8 +295,8 @@ train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_atoms_train
 atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
 atoms_val, bonds_val, _ = encoder.predict([X_atoms_val, X_bonds_val])
 
-regressor = load_model('./../data/nns/regressor.h5')
-regressor_top = load_model('./../data/nns/regressor_top.h5')
+#regressor = load_model('./../data/nns/regressor.h5')
+#regressor_top = load_model('./../data/nns/regressor_top.h5')
 
 regressor.fit([atoms_embedding, bonds_embedding], 
               y_train,
@@ -302,7 +304,7 @@ regressor.fit([atoms_embedding, bonds_embedding],
                                   bonds_val],
                                  y_val),
               batch_size = 32,
-              epochs = 1,
+              epochs = 50,
               verbose = 1)
 
 # Validating the regressor
@@ -322,8 +324,8 @@ print ("True validation values: ", y_val)
 regressor.save('./../data/nns/regressor.h5')
 regressor_top.save('./../data/nns/regressor_top.h5')
 
-regressor = load_model('./../data/nns/regressor.h5')
-regressor_top = load_model('./../data/nns/regressor_top.h5')
+#regressor = load_model('./../data/nns/regressor.h5')
+#regressor_top = load_model('./../data/nns/regressor_top.h5')
 #generator = load_model ('generator.h5')
 #discriminator= load_model ('discriminator.h5')
 
@@ -331,10 +333,12 @@ regressor_top.trainable = False
 regressor.trainable = False
 
 epochs = 20
-batch_size = 512
-threshold = 0.3
-
+batch_size = 128
+threshold = 0.2
+# number of fake indices feedback 5or50 
 reinforce_n = 50
+# number of samples picked for reinforcement, 100or1000
+reinforce_sample = 1000
 
 batches = y_train.shape[0] // batch_size
 
@@ -352,6 +356,10 @@ for e in range(epochs):
     D_loss_real = []
     D_loss_fake = []
     for b in range(batches):
+        
+        regressor_top.trainable = False
+        regressor.trainable = False
+
         idx = np.arange(b * batch_size, (b + 1) * batch_size)
         # Subsample started for reinforcements
         idx = np.random.choice(idx, batch_size, replace = False)
@@ -359,13 +367,15 @@ for e in range(epochs):
         atoms_train = X_atoms_train[idx]
         bonds_train = X_bonds_train[idx]
         batch_y = y_train[idx]
+        # !!!!!!!!!! SD should be 1
         batch_z = np.random.normal(0, 1, size = (batch_size, 128))
         
         atoms_embedding, bonds_embedding, _ = encoder.predict([atoms_train, bonds_train])
         gen_atoms_embedding, gen_bonds_embedding = generator.predict([batch_z, batch_y])
-        r_loss = regressor.train_on_batch([atoms_embedding, bonds_embedding], batch_y)
+        """
+		r_loss = regressor.train_on_batch([atoms_embedding, bonds_embedding], batch_y)
         R_loss.append(r_loss)
-        
+        """
         real_latent = regressor_top.predict([atoms_embedding, bonds_embedding])
         fake_latent = regressor_top.predict([gen_atoms_embedding, gen_bonds_embedding])
         
@@ -383,6 +393,9 @@ for e in range(epochs):
         D_loss_fake.append (d_loss_fake)
         
         discriminator.trainable = False
+        regressor_top.trainable = False
+        regressor.trainable = False
+
         g_loss = combined.train_on_batch([batch_z, batch_y], [0.9 * np.ones((batch_size, 1)), batch_y])
         G_loss.append(g_loss)
     
@@ -390,7 +403,7 @@ for e in range(epochs):
     D_Losses_real.append(np.mean(D_loss_real))
     D_Losses_fake.append(np.mean(D_loss_fake))
     G_Losses.append(np.mean(G_loss))
-    R_Losses.append(np.mean(R_loss))
+    #R_Losses.append(np.mean(R_loss))
     
     print('====')
     print('Current epoch: {}/{}'.format((e + 1), epochs))
@@ -398,7 +411,7 @@ for e in range(epochs):
     print ('D Loss Fake: {}'.format(np.mean(D_loss_fake)))
     print('D Loss: {}'.format(np.mean(D_loss)))
     print('G Loss: {}'.format(np.mean(G_loss)))
-    print('R Loss: {}'.format(np.mean(R_loss)))
+    #print('R Loss: {}'.format(np.mean(R_loss)))
     print('====')
     print()
 
@@ -408,13 +421,13 @@ for e in range(epochs):
     gen_smiles = []
     embeddings = []
     sample_ys = []
-    for _ in range(1000):
-        #sample_y = np.random.uniform(s_min, s_max, size = [1,])
+    for _ in range(reinforce_sample):
         sample_y = np.random.uniform(s_min, s_max, size = [1,])
         sample_y = np.round(sample_y, 4)
         sample_y = (sample_y - s_min) / (s_max - s_min)
         sample_ys.append(sample_y)
 
+        # SD_original should be 1
         sample_z = np.random.normal(0, 1, size = (1, 128))
 
         sample_atoms_embedding, sample_bonds_embedding = generator.predict([sample_z, sample_y])
@@ -455,7 +468,8 @@ for e in range(epochs):
             try:
                 gen_smiles [iter_] = Chem.MolToSmiles(m)
                 print (Chem.MolToSmiles(m))
-                print ("Hc", sample_ys[iter_]) 
+                print ("Hc_des", sample_ys[iter_]) 
+                print ("error", gen_error[iter_])
             except:
                 pass
     idx_ = np.asarray(idx_)
@@ -473,7 +487,7 @@ for e in range(epochs):
         reinforce_n += 10
     
     # invalid smiles:
-    fake_indices = np.setdiff1d(np.arange(1000), np.asarray(idx_))
+    fake_indices = np.setdiff1d(np.arange(reinforce_sample), np.asarray(idx_))
     fake_indices = np.random.choice(fake_indices, reinforce_n * 5, replace = False)
     
     real_indices_ = np.intersect1d(np.where(gen_error < threshold)[0], idx_)
@@ -482,6 +496,8 @@ for e in range(epochs):
     
     if e >= 0:
         discriminator.trainable = True
+        regressor_top.trainable = False
+        regressor.trainable = False
         for real_index in real_indices:
             real_latent = regressor_top.predict([embeddings[real_index][0], embeddings[real_index][1]])
             _ = discriminator.train_on_batch([real_latent, sample_ys[real_index]],
@@ -513,7 +529,7 @@ for e in range(epochs):
         plt.plot(D_Losses)
         #plt.plot(R_Losses)
         plt.legend(['G Loss', 'D Loss'])
-        plt.savefig("G_D_R_losses_{}.png".format (e+1))
+        #plt.savefig("G_D_R_losses_{}.png".format (e+1))
     n_unique = len(np.unique(np.array(gen_smiles)[real_indices_]))
     n_valid = valid
     if valid > 450 and n_unique > 35:
@@ -554,14 +570,8 @@ decoder = load_model('./../data/nns/decoder.h5')
 
 from progressbar import ProgressBar
 
-# define normal sampling in ranges
-def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
-    return truncnorm(
-	        (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
-
-
-N = 100
-n_sample = 1000
+N = 10000
+n_sample = 100
 
 gen_error = []
 gen_smiles = []
@@ -570,17 +580,26 @@ preds = []
 gen_atoms_embedding = []
 gen_bonds_embedding = []
 
+regressor_top.trainable = False
+regressor.trainable = False
+generator.trainable = False
+discriminator.trainable = False
+
 pbar = ProgressBar()
 for hc in pbar(range(n_sample)):
     try:
-        #sample_y = np.random.uniform(s_min, s_max, size = [1,])
-        X = get_truncated_normal(mean=30, sd=5, low=s_min, upp=s_max)
-        sample_y = X.rvs()
+        sample_y = np.random.uniform(s_min, s_max, size = [1,])
+        #X = get_truncated_normal(mean=30, sd=5, low=s_min, upp=s_max)
+        #sample_y = X.rvs()
         print (sample_y)
         sample_y = np.round(sample_y, 3)
         sample_y = sample_y * np.ones([N,])
         sample_y_ = (sample_y - s_min) / (s_max - s_min)
+        # !!!!!!!!! SD_origianl = 1
         sample_z = np.random.normal(0, 1, size = (N, 128))
+        
+        regressor_top.trainable = False
+        regressor.trainable = False
 
         sample_atoms_embedding, sample_bonds_embedding = generator.predict([sample_z, sample_y_])
         pred = regressor.predict([sample_atoms_embedding, sample_bonds_embedding]).reshape([-1])
@@ -588,7 +607,7 @@ for hc in pbar(range(n_sample)):
 
         gen_errors = np.abs((pred - sample_y) / sample_y).reshape([-1])
 
-        accurate = np.where(gen_errors >0)[0]
+        accurate = np.where(gen_errors < 0.1)[0]
         gen_errors = gen_errors[accurate]
         pred = pred[accurate]
 
@@ -726,8 +745,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular/Regular_12.csv', index = False)
-output2.to_csv('./../experiments/regular/Regular_NODUP_12.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_13.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_13.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """
