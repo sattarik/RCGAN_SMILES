@@ -332,7 +332,7 @@ regressor_top.save('./../data/nns/regressor_top.h5')
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 20
+epochs = 100
 batch_size = 128
 threshold = 0.2
 # number of fake indices feedback 5or50 

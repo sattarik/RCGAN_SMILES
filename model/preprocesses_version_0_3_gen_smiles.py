@@ -47,14 +47,14 @@ data = get_molnet_dataset('qm9',
                           frac_test = 0.0
                          )
 
-
-data_gen = pd.read_csv('final_data_Feat_Cv_smiles2.csv')
-heat_capacity_des, gen_smiles = data_gen.iloc[:,-2].values, data_gen.iloc[:,-1].values
-
-with open('Data.pickle', 'wb') as f:
-    pickle.dump(data, f)
 """
-with open ('Data.pickle', 'rb') as f: 
+data_gen = pd.read_csv('./../experiments/regular/DFT_eval/reg_dfteval.csv')
+heat_capacity_des, gen_smiles = data_gen.iloc[:,-3].values, data_gen.iloc[:,0].values
+
+print (gen_smiles)
+print (heat_capacity_des)
+
+with open ('./../data/trainingsets/20000_train_regular_qm9/image_train.pickle', 'rb') as f: 
     data = pickle.load(f)
 
 X_smiles = []
