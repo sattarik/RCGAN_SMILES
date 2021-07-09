@@ -57,16 +57,16 @@ random.seed(12345)
 
 
 # loading data both qm9 and generated data
-with open('image_train.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/image_train.pickle', 'rb') as f:
     X_smiles_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
 
-with open('image_test.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/image_test.pickle', 'rb') as f:
     X_smiles_test, X_atoms_test, X_bonds_test, y_test = pickle.load(f)
     
 with open('gen_smiles2_atombond.pickle', 'rb') as f:
-    X_smiles_val, X_atoms_val, X_bonds_val, y_val = pickle.load(f)
+    X_smiles_val, X_atoms_val, X_bonds_val, y_val_, y_dft_ = pickle.load(f)
 
-with open('tokenizer.pickle', 'rb') as f:
+with open('./../data/trainingsets/20000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
     tokenizer = pickle.load(f)
     
 tokenizer[0] = ' '
@@ -93,13 +93,15 @@ def y_norm(y: ndarray) -> ndarray:
     return y, scaler_min, scaler_max
 
 y_train, s_min, s_max = y_norm(y_train)
+print (s_min, s_max)
 y_test = (y_test - s_min) / (s_max - s_min)
-y_val = (y_val - s_min) / (s_max - s_min)
+y_val = (y_val_ - s_min) / (s_max - s_min)
+y_dft = (y_dft_ - s_min) / (s_max - s_min)
 #y_test, s_min, s_max = y_norm(y_test)
 #y_val, s_min_val, s_max_val = y_norm(y_val)
 
-encoder = load_model('encoder.h5')
-decoder = load_model('decoder.h5')
+encoder = load_model('./../data/nns/encoder.h5')
+decoder = load_model('./../data/nns/decoder.h5')
 
 
 # Regressor
@@ -152,8 +154,8 @@ atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_tr
 atoms_test, bonds_test, _ = encoder.predict([X_atoms_test, X_bonds_test])
 atoms_val, bonds_val, _ = encoder.predict([X_atoms_val, X_bonds_val])
 
-regressor = load_model('regressor.h5')
-regressor_top = load_model('regressor_top.h5')
+regressor = load_model    ('./../data/nns/regressor.h5')
+regressor_top = load_model('./../data/nns/regressor_top.h5')
 
 regressor.fit([atoms_embedding, bonds_embedding], 
               y_train,
@@ -161,7 +163,7 @@ regressor.fit([atoms_embedding, bonds_embedding],
                                   bonds_test],
                                  y_test),
               batch_size = 32,
-              epochs = 10,
+              epochs = 1,
               verbose = 1)
 
 # Validating the regressor
@@ -176,38 +178,16 @@ print('Current test (qm9) R2 on Regressor: {}'.format(r2_score(y_test, pred.resh
 #====#
 atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_val, X_bonds_val])
 pred = regressor.predict([atoms_embedding, bonds_embedding])
-print('Current gen_data R2 on Regressor: {}'.format(r2_score(y_val, pred.reshape([-1]))))
+print('Current gen_data R2 on Regressor: {}'.format(r2_score(y_dft, pred.reshape([-1]))))
+print (y_train)
+print (y_test)
+print (y_val)
+print (y_val_)
+print (y_dft)
+print (y_dft_)
 
 
-regressor.save ('regressor.h5')
-regressor_top.save ('regressor_top.h5')
 
-# PCA analysis on latent space form regressor_top 
-pca_1 = PCA(n_components = 2)
-atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
-pca_latent_space_trainqm9 = pca_1.fit_transform(regressor_top.predict([atoms_embedding, bonds_embedding]))
 
-atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_test, X_bonds_test])
-pca_latent_space_testqm9 = pca_1.fit_transform(regressor_top.predict([atoms_embedding, bonds_embedding]))
-
-atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_val, X_bonds_val])
-pca_latent_space_gendata = pca_1.fit_transform(regressor_top.predict([atoms_embedding, bonds_embedding]))
-
-# plot PCA of latent space the last pic has all of them on one graph
-plt.clf()
-plt.scatter(pca_latent_space_trainqm9[:,0], pca_latent_space_trainqm9[:,1], alpha = 0.3, c = 'blue', label = 'train_qm9');
-plt.savefig("pca_qm9_latentspace_train.png") 
-
-#plt.clf()
-plt.scatter(pca_latent_space_testqm9[:,0], pca_latent_space_testqm9[:,1], alpha = 0.3, c = 'black', label = 'test_qm9');
-plt.savefig("pca_qm9_latentspace_test.png")
-
-plt.scatter(pca_latent_space_gendata[:,0], pca_latent_space_gendata[:,1], alpha = 0.3, c = 'red', label = 'generated_data')
-plt.xlim(-5.8,5)
-plt.legend (loc = 'upper left');
-plt.title ("Latent Space: (train and test from qm9) vs. generated data");
-plt.xlabel("Principal Component 1");
-plt.ylabel("Principal Component 2");
-plt.savefig("pca_gendata1_latentspace.png")
-
+ 
 

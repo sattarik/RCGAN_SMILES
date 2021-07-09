@@ -207,8 +207,8 @@ X = Input(shape = (128, ))
 y2 = Concatenate(axis = 1)([X, y])
 
 for i in range(3):
-    y2 = Dense(64, activation = 'relu')(y2)
-    y2 = LeakyReLU(alpha = 0.2)(y2)
+		y2 = Dense(64, activation = 'relu')(y2)
+		y2 = LeakyReLU(alpha = 0.2)(y2)
     y2 = Dropout(0.2)(y2)
 
 O_dis = Dense(1, activation = 'sigmoid')(y2)

@@ -49,12 +49,13 @@ data = get_molnet_dataset('qm9',
 
 """
 data_gen = pd.read_csv('./../experiments/regular/DFT_eval/reg_dfteval.csv')
-heat_capacity_des, gen_smiles = data_gen.iloc[:,-3].values, data_gen.iloc[:,0].values
+pred_cv, gen_smiles, DFT_cv = data_gen.iloc[:,2].values, data_gen.iloc[:,0].values, data_gen.iloc[:,-3].values
 
-print (gen_smiles)
-print (heat_capacity_des)
+print (gen_smiles[0])
+print (pred_cv[0])
+print (DFT_cv[0])
 
-with open ('./../data/trainingsets/20000_train_regular_qm9/image_train.pickle', 'rb') as f: 
+with open ('./../data/trainingsets/Data.pickle', 'rb') as f: 
     data = pickle.load(f)
 
 X_smiles = []
@@ -86,24 +87,27 @@ for i,ii in enumerate(X_gen_atoms):
         exclude.append(i)
 print (exclude)
 exclude = np.asarray(exclude, dtype = 'int')
-idx = np.setdiff1d(np.arange(len(heat_capacity_des)), exclude)
+idx = np.setdiff1d(np.arange(len(pred_cv)), exclude)
 idx = np.asarray(idx, dtype = 'int')
 X_gen_atoms_ = []
 X_gen_bonds_ = []
 gen_smiles_ = []
-heat_capacity_des_ = []
+pred_cv_ = []
+DFT_cv_ = []
 for i,ii in enumerate (idx):
     X_gen_atoms_.append (X_gen_atoms [ii])
     X_gen_bonds_.append (X_gen_bonds [ii])
     gen_smiles_.append (gen_smiles [ii])
-    heat_capacity_des_.append (heat_capacity_des [ii])
+    pred_cv_.append (pred_cv [ii])
+    DFT_cv_.append  (DFT_cv [ii])
 
 X_gen_atoms = X_gen_atoms_
 X_gen_bonds =  X_gen_bonds_
 gen_smiles = gen_smiles_
-heat_capacity_des = heat_capacity_des_
+pred_cv = pred_cv_
+DFT_cv = DFT_cv_
 
-print (len(heat_capacity_des))
+print (len(pred_cv))
 
 
 for smiles in data['smiles'][0]:
@@ -124,12 +128,13 @@ for d in data['dataset'][0]:
 
     y.append(d[2])
 
+"""
 with open('database_SMILES.pickle', 'wb') as f:
     pickle.dump((X_smiles, X_atoms, X_bonds, y), f)
 
 with open('database_gen_SMILES.pickle', 'wb') as f:
     pickle.dump((X_gen_smiles, X_gen_atoms, X_gen_bonds, y), f)
-
+"""
 
 
 MAX_NB_WORDS = 23
@@ -235,7 +240,7 @@ print (X_gen_bonds.shape)
 sns.distplot(y);
 plt.savefig('dis_y.png')
 
-sns.distplot(heat_capacity_des);
+sns.distplot(pred_cv);
 plt.savefig('dis_hearDesired.png')
 ####
 
@@ -247,13 +252,13 @@ X_smiles_test, X_atoms_test, X_bonds_test, y_test = X_smiles[idx], X_atoms[idx],
 X_smiles_train, X_atoms_train, X_bonds_train, y_train = X_smiles[train_idx], X_atoms[train_idx], X_bonds[train_idx], y[train_idx]
 
 # TRAIN/VAL split gen_data
-idx = np.random.choice(len(heat_capacity_des), int(len(heat_capacity_des) * 0.15), replace = False)
-train_idx = np.setdiff1d(np.arange(len(heat_capacity_des)), idx)
+idx = np.random.choice(len(pred_cv), int(len(pred_cv) * 0.15), replace = False)
+train_idx = np.setdiff1d(np.arange(len(pred_cv)), idx)
 
-X_gen_smiles, X_gen_atoms, X_gen_bonds, heat_capacity_des = np.asarray(X_gen_smiles), np.asarray(X_gen_atoms), np.asarray(X_gen_bonds), np.asarray(heat_capacity_des)
+X_gen_smiles, X_gen_atoms, X_gen_bonds, pred_cv = np.asarray(X_gen_smiles), np.asarray(X_gen_atoms), np.asarray(X_gen_bonds), np.asarray(pred_cv)
 
-X_gen_smiles_test, X_gen_atoms_test, X_gen_bonds_test, heat_capacity_des_test = X_gen_smiles[idx], X_gen_atoms[idx], X_gen_bonds[idx], heat_capacity_des[idx]
-X_gen_smiles_train, X_gen_atoms_train, X_gen_bonds_train, heat_capacity_des_train = X_gen_smiles[train_idx], X_gen_atoms[train_idx], X_gen_bonds[train_idx], heat_capacity_des[train_idx]
+X_gen_smiles_test, X_gen_atoms_test, X_gen_bonds_test, pred_cv_test = X_gen_smiles[idx], X_gen_atoms[idx], X_gen_bonds[idx], pred_cv[idx]
+X_gen_smiles_train, X_gen_atoms_train, X_gen_bonds_train, pred_cv_train = X_gen_smiles[train_idx], X_gen_atoms[train_idx], X_gen_bonds[train_idx], pred_cv[train_idx]
 
 ####
 # ANALYSIS
@@ -343,7 +348,7 @@ X_smiles_test, X_atoms_test, X_bonds_test, y_test = (X_smiles_test[idx],
                                                      X_atoms_test[idx],
                                                      X_bonds_test[idx],
                                                      y_test[idx])
-
+"""
 with open('image_train.pickle', 'wb') as f:
     pickle.dump((X_smiles_train, X_atoms_train, X_bonds_train, y_train), f)
 
@@ -355,14 +360,14 @@ with open('tokenizer.pickle', 'wb') as f:
 
 with open('database.pickle', 'wb') as f:
     pickle.dump((X_smiles, X_atoms, X_bonds, y), f)
-
+"""
 with open('gen_smiles2_atombond.pickle', 'wb') as f:
-    pickle.dump((X_gen_smiles, X_gen_atoms, X_gen_bonds, heat_capacity_des),f)
+    pickle.dump((X_gen_smiles, X_gen_atoms, X_gen_bonds, pred_cv, DFT_cv),f)
 
 with open('gen_smiles2_atombond_train.pickle', 'wb') as f:
-    pickle.dump((X_gen_smiles_train, X_gen_atoms_train, X_gen_bonds_train, heat_capacity_des_train),f)
+    pickle.dump((X_gen_smiles_train, X_gen_atoms_train, X_gen_bonds_train, pred_cv_train),f)
 
 with open('gen_smiles2_atombond_test.pickle', 'wb') as f:
-    pickle.dump((X_gen_smiles_test, X_gen_atoms_test, X_gen_bonds_test, heat_capacity_des_test),f)
+    pickle.dump((X_gen_smiles_test, X_gen_atoms_test, X_gen_bonds_test, pred_cv_test),f)
 
 
