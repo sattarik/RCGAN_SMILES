@@ -62,38 +62,42 @@ gen_SMILES2['jobacks'] = jobacks
 print (val.shape)
 print (gen_SMILES2.shape)
 
-val = pd.merge(val, gen_SMILES2, how = 'right', on = 'SMILES')
-print (val)
-val['Err_joback_pred'] = np.abs((val['pred_cv'].values-val['jobacks'].values)/val['jobacks'].values)
+#val = pd.merge(val, gen_SMILES2, how = 'right', on = 'SMILES')
+#print (val)
+gen_SMILES2['Err_joback_pred'] = np.abs((gen_SMILES2['pred_cv'].values-
+                                         gen_SMILES2['jobacks'].values)/
+                                         gen_SMILES2['jobacks'].values)
 
-csv_name = csv_name.replace('.csv', '') 
-gen_SMILES2.to_csv('{}_jobackadded.csv'.format(csv_name), index = False)
+
 
 # error using Joback method mean and median 
 # (joback vs. Desired Cv)
-mean_err = np.mean(np.abs((val['des_cv'].values - 
-                           val['jobacks'].values) / 
-                           val['jobacks'].values))
+mean_err = np.mean(np.abs((gen_SMILES2['des_cv'].values - 
+                           gen_SMILES2['jobacks'].values) / 
+                           gen_SMILES2['jobacks'].values))
 print ("mean error Joback(gen_SMILES) Vs. Sampled_Desired: ", mean_err)
-median_err = np.median(np.abs((val['des_cv'].values - 
-                               val['jobacks'].values) / 
-                               val['jobacks'].values))
+median_err = np.median(np.abs((gen_SMILES2['des_cv'].values - 
+                               gen_SMILES2['jobacks'].values) / 
+                               gen_SMILES2['jobacks'].values))
 print ("median error Joback(gen_SMILES) Vs. Sampled_Desired: ", median_err)
 
 # error using Joback method mean and median 
 # (Joback vs. predicted Cv by regressor)
-mean_err = np.mean(np.abs((val['pred_cv'].values - 
-                           val['jobacks'].values) / 
-                           val['jobacks'].values))
+mean_err = np.mean(np.abs((gen_SMILES2['pred_cv'].values - 
+                           gen_SMILES2['jobacks'].values) / 
+                           gen_SMILES2['jobacks'].values))
 print ("mean error Joback(gen_SMILES) Vs. Predicted from regressor: ", mean_err)
-median_err = np.median(np.abs((val['pred_cv'].values - 
-                               val['jobacks'].values) /  
-                               val['jobacks'].values))
+median_err = np.median(np.abs((gen_SMILES2['pred_cv'].values - 
+                               gen_SMILES2['jobacks'].values) /  
+                               gen_SMILES2['jobacks'].values))
 print ("median error Joback(gen_SMILES) Vs. Predicted from regressor: ", median_err)
 
-val.reset_index(drop = True, inplace = True)
+gen_SMILES2.reset_index(drop = True, inplace = True)
 
-val.to_csv('gen_SMILES2_joback.csv', index = False)
+csv_name = csv_name.replace('.csv', '') 
+gen_SMILES2.to_csv('{}_jobackadded.csv'.format(csv_name), index = False)
+
+#gen_SMILES2.to_csv('gen_SMILES2_joback.csv', index = False)
 
 # find the best candidates in generated SMILES (criteria: <0.05)
 val_accurate = pd.DataFrame({'SMILES': [],
@@ -109,14 +113,16 @@ for i, s in enumerate (val['SMILES'].values):
         accurate.append(i)
 print (accurate)
 """
-for i, s in enumerate (val['SMILES'].values):
-    if np.abs((val['des_cv'].values[i] - val['jobacks'].values[i]) / val['jobacks'].values[i]) < 0.15:
+for i, s in enumerate (gen_SMILES2['SMILES'].values):
+    if np.abs((gen_SMILES2['des_cv'].values[i] - 
+               gen_SMILES2['jobacks'].values[i]) / 
+               gen_SMILES2['jobacks'].values[i]) < 0.15:
         accurate.append(i)
 print (accurate)
 
 for ii, a in enumerate (accurate):
     #print (" i and a from accurate",ii, a)
-    val_accurate.loc[ii,:] = val.iloc[a,:]
+    val_accurate.loc[ii,:] = gen_SMILES2.iloc[a,:]
 print (val_accurate)
 print ("the first smile in val_accurate: ",val_accurate['SMILES'].values[0])
 for i, s in enumerate (val_accurate['SMILES'].values):
