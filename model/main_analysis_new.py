@@ -34,13 +34,13 @@ from chainer_chemistry.datasets.numpy_tuple_dataset import NumpyTupleDataset
 from chainer_chemistry.dataset.preprocessors import GGNNPreprocessor
 
 # load the generated SMILES from the RCGAN Model
-gen_SMILES = pd.read_csv('./../experiments/regular/DFT_eval/reg_dfteval.csv')
+gen_SMILES = pd.read_csv('./../experiments/regular/Regular_highepoorigwe_100ksam.csv')
 
 jobacks = []
 validated = []
 for s in gen_SMILES['SMILES'].values:
     try:
-        print (s)
+        #print (s)
         J = Joback(s)
         jobacks.append(J.Cpig(298.15) * 0.2390057361)
         validated.append(s)

@@ -55,7 +55,7 @@ data = get_molnet_dataset('qm9',
 with open('Data.pickle', 'wb') as f:
     pickle.dump(data, f)
 """
-with open('Data.pickle', 'rb') as f:
+with open('./../data/trainingsets/Data.pickle', 'rb') as f:
     data = pickle.load(f)
 
 X_smiles = []
@@ -80,10 +80,10 @@ for d in data['dataset'][0]:
     bonds_lengths.append(d[1].shape[1])
     
     y.append(d[2])
-
+"""
 with open('database_SMILES.pickle', 'wb') as f:
     pickle.dump((X_smiles, X_atoms, X_bonds, y), f)
-
+"""
 MAX_NB_WORDS = 23
 MAX_SEQUENCE_LENGTH = 35
 
@@ -92,8 +92,9 @@ tokenizer = Tokenizer(num_words = MAX_NB_WORDS,
                       filters = '', 
                       lower = False)
 tokenizer.fit_on_texts(X_smiles)
-
+print (X_smiles[0])
 X_smiles = tokenizer.texts_to_sequences(X_smiles)
+print (X_smiles[0])
 X_smiles = pad_sequences(X_smiles, 
                          maxlen = MAX_SEQUENCE_LENGTH,
                          padding = 'post')
@@ -175,7 +176,7 @@ plt.scatter(X_atoms_test_[:,0], X_atoms_test_[:,1], alpha = 0.3, c = 'red');
 # Bonds Distribution
 plt.scatter(X_bonds_train_[:,0], X_bonds_train_[:,1], alpha = 0.3, c = 'blue');
 plt.scatter(X_bonds_test_[:,0], X_bonds_test_[:,1], alpha = 0.3, c = 'red');
-
+"""
 idx = np.where(y_train > 40)[0]
 X_smiles_train, X_atoms_train, X_bonds_train, y_train = (X_smiles_train[idx],
                                                 X_atoms_train[idx],
@@ -191,6 +192,7 @@ X_smiles_test, X_atoms_test, X_bonds_test, y_test = (X_smiles_test[idx],
 
 """
 # subsampling
+"""
 idx = np.random.choice(len(y_train), int(len(y_train) * 0.25), replace = False)
 
 X_smiles_train, X_atoms_train, X_bonds_train, y_train = (X_smiles_train[idx],
@@ -206,15 +208,17 @@ X_smiles_test, X_atoms_test, X_bonds_test, y_test = (X_smiles_test[idx],
                                                      X_bonds_test[idx],
                                                      y_test[idx])
 """
-with open('image_train_highhc.pickle', 'wb') as f:
+
+with open('./../data/trainingsets/100000_train_regular_qm9/image_train.pickle', 'wb') as f:
     pickle.dump((X_smiles_train, X_atoms_train, X_bonds_train, y_train), f)
     
-with open('image_test_highhc.pickle', 'wb') as f:
+with open('./../data/trainingsets/100000_train_regular_qm9/image_test.pickle', 'wb') as f:
     pickle.dump((X_smiles_test, X_atoms_test, X_bonds_test, y_test), f)
-
+"""
 with open('tokenizer.pickle', 'wb') as f:
     pickle.dump(tokenizer.index_word, f)
-"""
+
+
 with open('database.pickle', 'wb') as f:
     pickle.dump((X_smiles, X_atoms, X_bonds, y), f)
 """

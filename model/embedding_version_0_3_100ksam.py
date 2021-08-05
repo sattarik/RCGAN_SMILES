@@ -54,10 +54,10 @@ random.seed(12345)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 #K.set_session(sess)
 
-with open('./../data/trainingsets/60000_train_regular_qm9/image_train.pickle', 'rb') as f:
+with open('./../data/trainingsets/100000_train_regular_qm9/image_train.pickle', 'rb') as f:
     X_smiles_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
 
-with open('./../data/trainingsets/60000_train_regular_qm9/image_test.pickle', 'rb') as f:
+with open('./../data/trainingsets/100000_train_regular_qm9/image_test.pickle', 'rb') as f:
     X_smiles_test, X_atoms_test, X_bonds_test, y_test = pickle.load(f)
 
 # Subsampling has been done in the data preprocesses
@@ -243,22 +243,21 @@ model.fit([X_atoms_train, X_bonds_train],
                     batch_size = 32,
                     verbose = 1)
 """
-encoder = load_model('./../data/nns_60ksam/encoder.h5')
-decoder = load_model('./../data/nns_60ksam/decoder.h5')
-model = load_model  ('./../data/nns_60ksam/ae_model.h5')
+encoder = load_model('./../data/nns/encoder.h5')
+decoder = load_model('./../data/nns/decoder.h5')
+model = load_model  ('./../data/nns/ae_model.h5')
 """
 model.compile(optimizer = Adam(learning_rate = 9e-5),
               loss = ['binary_crossentropy', 'mse'])
-"""
 """
 model.fit([X_atoms_train, X_bonds_train],
                     [X_smiles_train, y_train],
                     validation_data = ([X_atoms_test, X_bonds_test],
                                        [X_smiles_test, y_test]),
-                    epochs = 1,
-                    batch_size = 32,
+                    epochs = 50,
+                    batch_size = 64,
                     verbose = 1)
-"""
+
 for i in [5, 10, 32, 88, 99]:
     plt.subplot(121)
     plt.imshow(X_smiles_train[i].reshape([35, 23]))
@@ -267,10 +266,6 @@ for i in [5, 10, 32, 88, 99]:
     plt.imshow(test_sample_pred.reshape([35, 23]))
     plt.show()
     plt.savefig("smiles_{}_train.png".format(i)) 
-
-output = decoder.predict(encoder.predict([X_atoms_train[5:7], X_bonds_train[5:7]])[2])
-print (output[0][0].shape)
-print(y_train[5])
 
 for i in [5, 10, 32, 88, 99]:
     plt.subplot(121)
@@ -281,6 +276,6 @@ for i in [5, 10, 32, 88, 99]:
     plt.show()
     plt.savefig("smiles_{}_test.png".format(i))
 
-#model.save  ('./../data/nns_60ksam/ae_model.h5')
-#encoder.save('./../data/nns_60ksam/encoder.h5')
-#decoder.save('./../data/nns_60ksam/decoder.h5')
+model.save  ('./../data/nns_100ksam/ae_model.h5')
+encoder.save('./../data/nns_100ksam/encoder.h5')
+decoder.save('./../data/nns_100ksam/decoder.h5')

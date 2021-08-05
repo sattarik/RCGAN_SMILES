@@ -8,6 +8,7 @@
 # Regenerate Normal sampling (define ranges), default: uniform
 
 # IMPORTANT!!!!!!!!!!!!! DO NOT DROP DUPLICATE FOR RESULT .CSV
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -47,13 +48,13 @@ import seaborn as sns
 
 from sklearn.metrics import r2_score
 
-from rdkit import Chem
 
 print ("!!!!!!!!! we are just before importing rdkit!!!!!")
 from rdkit import rdBase
 rdBase.DisableLog('rdApp.error')
 from rdkit import Chem
 print ("!!!!!!!!!!!!!!!!!!!!!we are after importing rdkit!!!!!!!!!!!!!!!!!!")
+
 from scipy.stats import truncnorm
 from sklearn.decomposition import PCA
 
@@ -209,13 +210,13 @@ y2 = Concatenate(axis = 1)([X, y])
 for i in range(3):
 		y2 = Dense(64, activation = 'relu')(y2)
 		y2 = LeakyReLU(alpha = 0.2)(y2)
-    y2 = Dropout(0.2)(y2)
+		y2 = Dropout(0.2)(y2)
 
 O_dis = Dense(1, activation = 'sigmoid')(y2)
 
 
 discriminator = Model([X, y], O_dis)
-discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 5e-7, beta_1 = 0.5))
+discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 5e-6, beta_1 = 0.5))
 print (discriminator.summary()) 
 # Regressor
 inp1 = Input(shape = [6, 6, 1])
@@ -281,7 +282,7 @@ def build_combined(z, y,
     combined.compile(loss = ['binary_crossentropy',
                              'mse'], 
                      loss_weights = [1.0, 25.0], 
-                     optimizer = Adam(5e-7, beta_1 = 0.5))
+                     optimizer = Adam(5e-6, beta_1 = 0.5))
 
     return combined
 
@@ -295,8 +296,8 @@ train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_atoms_train
 atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
 atoms_val, bonds_val, _ = encoder.predict([X_atoms_val, X_bonds_val])
 
-#regressor = load_model('./../data/nns/regressor.h5')
-#regressor_top = load_model('./../data/nns/regressor_top.h5')
+regressor = load_model('./../data/nns/regressor.h5')
+regressor_top = load_model('./../data/nns/regressor_top.h5')
 
 regressor.fit([atoms_embedding, bonds_embedding], 
               y_train,
@@ -304,7 +305,7 @@ regressor.fit([atoms_embedding, bonds_embedding],
                                   bonds_val],
                                  y_val),
               batch_size = 32,
-              epochs = 50,
+              epochs = 1,
               verbose = 1)
 
 # Validating the regressor
@@ -321,24 +322,24 @@ print('Current R2 on Regressor for validation data: {}'.format(r2_score(y_val, p
 print ("pred of validation data: ", pred )
 print ("True validation values: ", y_val)
 # Saving the currently trained models
-regressor.save('./../data/nns/regressor.h5')
-regressor_top.save('./../data/nns/regressor_top.h5')
+#regressor.save('./../data/nns/regressor.h5')
+#regressor_top.save('./../data/nns/regressor_top.h5')
 
 #regressor = load_model('./../data/nns/regressor.h5')
 #regressor_top = load_model('./../data/nns/regressor_top.h5')
-#generator = load_model ('generator.h5')
-#discriminator= load_model ('discriminator.h5')
+#generator = load_model    ('./../data/nns/generator.h5')
+#discriminator= load_model ('./../data/nns/discriminator.h5')
 
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 100
-batch_size = 128
+epochs = 1
+batch_size = 64
 threshold = 0.2
 # number of fake indices feedback 5or50 
-reinforce_n = 50
+reinforce_n = 5
 # number of samples picked for reinforcement, 100or1000
-reinforce_sample = 1000
+reinforce_sample = 5000
 
 batches = y_train.shape[0] // batch_size
 
@@ -371,6 +372,17 @@ for e in range(epochs):
         batch_z = np.random.normal(0, 1, size = (batch_size, 128))
         
         atoms_embedding, bonds_embedding, _ = encoder.predict([atoms_train, bonds_train])
+        dec_embedding = np.concatenate([atoms_embedding, bonds_embedding], axis = -1)
+		
+        smiles = decoder.predict(dec_embedding)[0]
+        smiles = np.argmax(smiles, axis = 2).reshape([-1])
+        c_smiles = ''
+        for s in smiles:
+            c_smiles += tokenizer[s]
+            c_smiles = c_smiles.rstrip()
+        
+        print (c_smiles)
+        print (X_smiles_train[idx],"!!!!!!!!!!!!1")
         gen_atoms_embedding, gen_bonds_embedding = generator.predict([batch_z, batch_y])
         """
 		r_loss = regressor.train_on_batch([atoms_embedding, bonds_embedding], batch_y)
@@ -446,6 +458,9 @@ for e in range(epochs):
         for s in smiles:
             c_smiles += tokenizer[s]
         c_smiles = c_smiles.rstrip()
+        if _==0:
+            print (smiles)
+            print (c_smiles)
         gen_smiles.append(c_smiles)
         
     gen_error = np.asarray(gen_error)
@@ -544,8 +559,8 @@ with open('GAN_loss.pickle', 'wb') as f:
 # Saving the currently trained models
 #regressor.save('regressor.h5')
 #regressor_top.save('regressor_top.h5')
-generator.save('./../data/nns/generator.h5')
-discriminator.save('./../data/nns/discriminator.h5')
+#generator.save('./../data/nns/generator.h5')
+#discriminator.save('./../data/nns/discriminator.h5')
 
 ##====#
 
@@ -745,8 +760,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular/Regular_13.csv', index = False)
-output2.to_csv('./../experiments/regular/Regular_NODUP_13.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_highepoorigwe.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_highepoorigwe.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """

@@ -8,6 +8,7 @@
 # Regenerate Normal sampling (define ranges), default: uniform
 
 # IMPORTANT!!!!!!!!!!!!! DO NOT DROP DUPLICATE FOR RESULT .CSV
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -47,13 +48,13 @@ import seaborn as sns
 
 from sklearn.metrics import r2_score
 
-from rdkit import Chem
 
 print ("!!!!!!!!! we are just before importing rdkit!!!!!")
 from rdkit import rdBase
 rdBase.DisableLog('rdApp.error')
 from rdkit import Chem
 print ("!!!!!!!!!!!!!!!!!!!!!we are after importing rdkit!!!!!!!!!!!!!!!!!!")
+
 from scipy.stats import truncnorm
 from sklearn.decomposition import PCA
 
@@ -207,9 +208,9 @@ X = Input(shape = (128, ))
 y2 = Concatenate(axis = 1)([X, y])
 
 for i in range(3):
-    y2 = Dense(64, activation = 'relu')(y2)
-    y2 = LeakyReLU(alpha = 0.2)(y2)
-    y2 = Dropout(0.2)(y2)
+		y2 = Dense(64, activation = 'relu')(y2)
+		y2 = LeakyReLU(alpha = 0.2)(y2)
+		y2 = Dropout(0.2)(y2)
 
 O_dis = Dense(1, activation = 'sigmoid')(y2)
 
@@ -321,22 +322,22 @@ print('Current R2 on Regressor for validation data: {}'.format(r2_score(y_val, p
 print ("pred of validation data: ", pred )
 print ("True validation values: ", y_val)
 # Saving the currently trained models
-#regressor.save('./../data/nns/regressor.h5')
-#regressor_top.save('./../data/nns/regressor_top.h5')
+regressor.save('./../data/nns/regressor.h5')
+regressor_top.save('./../data/nns/regressor_top.h5')
 
 #regressor = load_model('./../data/nns/regressor.h5')
 #regressor_top = load_model('./../data/nns/regressor_top.h5')
-#generator = load_model ('generator.h5')
-#discriminator= load_model ('discriminator.h5')
+#generator = load_model    ('./../data/nns/generator.h5')
+#discriminator= load_model ('./../data/nns/discriminator.h5')
 
-#regressor_top.trainable = False
-#regressor.trainable = False
+regressor_top.trainable = False
+regressor.trainable = False
 
-epochs = 100
-batch_size = 128
+epochs = 64
+batch_size = 64
 threshold = 0.2
 # number of fake indices feedback 5or50 
-reinforce_n = 50
+reinforce_n = 5
 # number of samples picked for reinforcement, 100or1000
 reinforce_sample = 5000
 
@@ -367,14 +368,15 @@ for e in range(epochs):
         atoms_train = X_atoms_train[idx]
         bonds_train = X_bonds_train[idx]
         batch_y = y_train[idx]
+        # !!!!!!!!!! SD should be 1
         batch_z = np.random.normal(0, 1, size = (batch_size, 128))
         
         atoms_embedding, bonds_embedding, _ = encoder.predict([atoms_train, bonds_train])
         gen_atoms_embedding, gen_bonds_embedding = generator.predict([batch_z, batch_y])
-       
-        r_loss = regressor.train_on_batch([atoms_embedding, bonds_embedding], batch_y)
+        """
+		r_loss = regressor.train_on_batch([atoms_embedding, bonds_embedding], batch_y)
         R_loss.append(r_loss)
-        
+        """
         real_latent = regressor_top.predict([atoms_embedding, bonds_embedding])
         fake_latent = regressor_top.predict([gen_atoms_embedding, gen_bonds_embedding])
         
@@ -426,6 +428,7 @@ for e in range(epochs):
         sample_y = (sample_y - s_min) / (s_max - s_min)
         sample_ys.append(sample_y)
 
+        # SD_original should be 1
         sample_z = np.random.normal(0, 1, size = (1, 128))
 
         sample_atoms_embedding, sample_bonds_embedding = generator.predict([sample_z, sample_y])
@@ -444,6 +447,9 @@ for e in range(epochs):
         for s in smiles:
             c_smiles += tokenizer[s]
         c_smiles = c_smiles.rstrip()
+        if _==0:
+            print (smiles)
+            print (c_smiles)
         gen_smiles.append(c_smiles)
         
     gen_error = np.asarray(gen_error)
@@ -466,7 +472,8 @@ for e in range(epochs):
             try:
                 gen_smiles [iter_] = Chem.MolToSmiles(m)
                 print (Chem.MolToSmiles(m))
-                print ("Hc", sample_ys[iter_]) 
+                print ("Hc_des", sample_ys[iter_]) 
+                print ("error", gen_error[iter_])
             except:
                 pass
     idx_ = np.asarray(idx_)
@@ -493,8 +500,8 @@ for e in range(epochs):
     
     if e >= 0:
         discriminator.trainable = True
-        #regressor_top.trainable = False
-        #regressor.trainable = False
+        regressor_top.trainable = False
+        regressor.trainable = False
         for real_index in real_indices:
             real_latent = regressor_top.predict([embeddings[real_index][0], embeddings[real_index][1]])
             _ = discriminator.train_on_batch([real_latent, sample_ys[real_index]],
@@ -539,8 +546,8 @@ with open('GAN_loss.pickle', 'wb') as f:
     pickle.dump((G_Losses, D_Losses, R_Losses), f)
 
 # Saving the currently trained models
-#regressor.save    ('./../data/nns/regressor_aftergen.h5')
-#regressor_top.save('./../data/nns/regressor_top_aftergen.h5')
+#regressor.save('regressor.h5')
+#regressor_top.save('regressor_top.h5')
 generator.save('./../data/nns/generator.h5')
 discriminator.save('./../data/nns/discriminator.h5')
 
@@ -567,12 +574,6 @@ decoder = load_model('./../data/nns/decoder.h5')
 
 from progressbar import ProgressBar
 
-# define normal sampling in ranges
-def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
-    return truncnorm(
-	        (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
-
-
 N = 10000
 n_sample = 100
 
@@ -598,6 +599,7 @@ for hc in pbar(range(n_sample)):
         sample_y = np.round(sample_y, 3)
         sample_y = sample_y * np.ones([N,])
         sample_y_ = (sample_y - s_min) / (s_max - s_min)
+        # !!!!!!!!! SD_origianl = 1
         sample_z = np.random.normal(0, 1, size = (N, 128))
         
         regressor_top.trainable = False
@@ -671,8 +673,7 @@ plt.close()
 plt.hist(gen_error)
 plt.savefig("gen_error_hist.png")
 
-#regressor.save('./../data/nns/regressor_afterexp.h5')
-#regressor_top.save('./../data/regressor_top_afterexp.h5')
+
 ## Statistics  (# DFT=True value, Des=prediction)
 
 # total # of samples
@@ -748,8 +749,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular/Regular_10highepo100wei.csv', index = False)
-output2.to_csv('./../experiments/regular/Regular_10NODUP_highepo100wei.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_highepoorigwe.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_highepoorigwe.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """
