@@ -333,13 +333,13 @@ regressor_top.save('./../data/nns_60ksam/regressor_top.h5')
 
 regressor = load_model('./../data/nns_60ksam/regressor.h5')
 regressor_top = load_model('./../data/nns_60ksam/regressor_top.h5')
-#generator = load_model    ('./../data/nns_60ksam/generator.h5')
-#discriminator= load_model ('./../data/nns_60ksam/discriminator.h5')
+generator = load_model    ('./../data/nns_60ksam/generator_keep2.h5')
+discriminator= load_model ('./../data/nns_60ksam/discriminator_keep2.h5')
 
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 300
+epochs = 1
 batch_size = 256
 threshold = 0.2
 # number of fake indices feedback 5or50 
@@ -565,8 +565,8 @@ with open('GAN_loss.pickle', 'wb') as f:
 # Saving the currently trained models
 #regressor.save('regressor.h5')
 #regressor_top.save('regressor_top.h5')
-generator.save    ('./../data/nns_60ksam/generator.h5')
-discriminator.save('./../data/nns_60ksam/discriminator.h5')
+#generator.save    ('./../data/nns_60ksam/generator.h5')
+#discriminator.save('./../data/nns_60ksam/discriminator.h5')
 
 ##====#
 
@@ -574,8 +574,8 @@ discriminator.save('./../data/nns_60ksam/discriminator.h5')
 
 #regressor = load_model('regressor.h5')
 #regressor_top = load_model('regressor_top.h5')
-generator = load_model    ('./../data/nns_60ksam/generator.h5')
-discriminator = load_model('./../data/nns_60ksam/discriminator.h5')
+generator = load_model    ('./../data/nns_60ksam/generator_keep2.h5')
+discriminator = load_model('./../data/nns_60ksam/discriminator_keep2.h5')
 
 encoder = load_model('./../data/nns_60ksam/encoder.h5')
 decoder = load_model('./../data/nns_60ksam/decoder.h5')
@@ -592,7 +592,7 @@ decoder = load_model('./../data/nns_60ksam/decoder.h5')
 from progressbar import ProgressBar
 
 N = 10000
-n_sample = 50
+n_sample = 100
 
 gen_error = []
 gen_smiles = []
@@ -767,8 +767,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular/Regular_100ep_60ksam2.csv', index = False)
-output2.to_csv('./../experiments/regular/Regular_NODUP_100ep_60ksam2.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_60ksam_13joback.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_60ksam_13joback.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """
