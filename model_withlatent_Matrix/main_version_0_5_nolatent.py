@@ -79,13 +79,13 @@ random.seed(12345)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 #K.set_session(sess)
 
-with open('./../data/trainingsets/20000_train_regular_qm9/image_train.pickle', 'rb') as f:
+with open('./../data/trainingsets/60000_train_regular_qm9/image_train.pickle', 'rb') as f:
     X_smiles_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
     
-with open('./../data/trainingsets/20000_train_regular_qm9/image_test.pickle', 'rb') as f:
+with open('./../data/trainingsets/60000_train_regular_qm9/image_test.pickle', 'rb') as f:
     X_smiles_val, X_atoms_val, X_bonds_val, y_val = pickle.load(f)
 
-with open('./../data/trainingsets/20000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
+with open('./../data/trainingsets/60000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
     tokenizer = pickle.load(f)
     
 tokenizer[0] = ' '
@@ -150,8 +150,8 @@ print ("min and max train data and test normalized", s_min, s_max, np.min(y_val)
 y_train = (y_train - s_min) / (s_max - s_min)
 print ("min and max train data and train normalized", s_min, s_max, np.min(y_train), np.max(y_train))
 
-encoder = load_model('./../data/nns/encoder.h5')
-decoder = load_model('./../data/nns/decoder.h5')
+encoder = load_model('./../data/nns_latentonly_latentonly/encoder.h5')
+decoder = load_model('./../data/nns_latentonly_latentonly/decoder.h5')
 
 class Config:
     
@@ -302,8 +302,8 @@ train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_atoms_train
 atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
 atoms_val, bonds_val, _ = encoder.predict([X_atoms_val, X_bonds_val])
 
-regressor = load_model('./../data/nns/regressor.h5')
-regressor_top = load_model('./../data/nns/regressor_top.h5')
+regressor = load_model('./../data/nns_latentonly/regressor.h5')
+regressor_top = load_model('./../data/nns_latentonly/regressor_top.h5')
 
 regressor.fit([atoms_embedding, bonds_embedding], 
               y_train,
@@ -328,13 +328,13 @@ print('Current R2 on Regressor for validation data: {}'.format(r2_score(y_val, p
 print ("pred of validation data: ", pred )
 print ("True validation values: ", y_val)
 # Saving the currently trained models
-regressor.save('./../data/nns/regressor.h5')
-regressor_top.save('./../data/nns/regressor_top.h5')
+regressor.save('./../data/nns_latentonly/regressor.h5')
+regressor_top.save('./../data/nns_latentonly/regressor_top.h5')
 
-regressor = load_model('./../data/nns/regressor.h5')
-regressor_top = load_model('./../data/nns/regressor_top.h5')
-#generator = load_model    ('./../data/nns/generator.h5')
-#discriminator= load_model ('./../data/nns/discriminator.h5')
+regressor = load_model('./../data/nns_latentonly/regressor.h5')
+regressor_top = load_model('./../data/nns_latentonly/regressor_top.h5')
+#generator = load_model    ('./../data/nns_latentonly/generator.h5')
+#discriminator= load_model ('./../data/nns_latentonly/discriminator.h5')
 
 regressor_top.trainable = False
 regressor.trainable = False
@@ -565,8 +565,8 @@ with open('GAN_loss.pickle', 'wb') as f:
 # Saving the currently trained models
 #regressor.save('regressor.h5')
 #regressor_top.save('regressor_top.h5')
-generator.save('./../data/nns/generator.h5')
-discriminator.save('./../data/nns/discriminator.h5')
+generator.save('./../data/nns_latentonly/generator.h5')
+discriminator.save('./../data/nns_latentonly/discriminator.h5')
 
 ##====#
 
@@ -574,11 +574,11 @@ discriminator.save('./../data/nns/discriminator.h5')
 
 #regressor = load_model('regressor.h5')
 #regressor_top = load_model('regressor_top.h5')
-generator = load_model    ('./../data/nns/generator.h5')
-discriminator = load_model('./../data/nns/discriminator.h5')
+generator = load_model    ('./../data/nns_latentonly/generator.h5')
+discriminator = load_model('./../data/nns_latentonly/discriminator.h5')
 
-encoder = load_model('./../data/nns/encoder.h5')
-decoder = load_model('./../data/nns/decoder.h5')
+encoder = load_model('./../data/nns_latentonly/encoder.h5')
+decoder = load_model('./../data/nns_latentonly/decoder.h5')
 
 # Generation workflow
 # 1. Given a desired heat capacity
