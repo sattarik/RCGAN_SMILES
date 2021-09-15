@@ -520,12 +520,12 @@ for e in range(epochs):
         regressor_top.trainable = False
         regressor.trainable = False
         for real_index in real_indices:
-            real_latent = regressor_top.predict([embeddings[real_index][0], embeddings[real_index][1]])
+            #real_latent = regressor_top.predict([embeddings[real_index][0], embeddings[real_index][1]])
             _ = discriminator.train_on_batch([embeddings[real_index][0], embeddings[real_index][1], sample_ys[real_index]],
                                              [0.9 * np.ones((1, 1))])
 
         for fake_index in fake_indices:
-            fake_latent = regressor_top.predict([embeddings[fake_index][0], embeddings[fake_index][1]])
+            #fake_latent = regressor_top.predict([embeddings[fake_index][0], embeddings[fake_index][1]])
             _ = discriminator.train_on_batch([embeddings[fake_index][0], embeddings[fake_index][1] , sample_ys[fake_index]],
                                              [np.zeros((1, 1))])
         discriminator.trainable = False

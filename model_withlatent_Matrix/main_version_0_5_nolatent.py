@@ -150,8 +150,8 @@ print ("min and max train data and test normalized", s_min, s_max, np.min(y_val)
 y_train = (y_train - s_min) / (s_max - s_min)
 print ("min and max train data and train normalized", s_min, s_max, np.min(y_train), np.max(y_train))
 
-encoder = load_model('./../data/nns_latentonly_latentonly/encoder.h5')
-decoder = load_model('./../data/nns_latentonly_latentonly/decoder.h5')
+encoder = load_model('./../data/nns_latentonly/encoder.h5')
+decoder = load_model('./../data/nns_latentonly/decoder.h5')
 
 class Config:
     
@@ -192,23 +192,25 @@ for i in range(3):
 R1 = Conv2D(1,
             kernel_size = 3,
             strides = 1,
-            padding = 'valid',
+            padding = 'same',
             activation = 'tanh')(R1)
 R2 = Conv2D(1,
             kernel_size = 3,
             strides = 1,
-            padding = 'valid',
+            padding = 'same',
             activation = 'tanh')(R2)
+R0 = Concatenate()([R1, R2])
+R = Flatten()(R0)
 
-generator = Model([z, y], [R1, R2])
+generator = Model([z, y], [R])
 print (generator.summary())
 # Discriminator
-#X = Input(shape = [6,6,2 ])
-inp1 = Input(shape = [6, 6, 1])
-inp2 = Input(shape = [6, 6, 1])
+X = Input(shape = (128, ))
+#inp1 = Input(shape = [6, 6, 1])
+#inp2 = Input(shape = [6, 6, 1])
 
-X1 = Concatenate()([inp1, inp2])
-X = Flatten()(X1)
+#X1 = Concatenate()([inp1, inp2])
+#X = Flatten()(X1)
 print (X.shape)
 y2 = Concatenate(axis = 1)([X, y])
 print (y2.shape)
@@ -220,14 +222,16 @@ for i in range(3):
 O_dis = Dense(1, activation = 'sigmoid')(y2)
 
 
-discriminator = Model([inp1, inp2, y], O_dis)
+discriminator = Model([X, y], O_dis)
 discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 5e-6, beta_1 = 0.5))
 print (discriminator.summary()) 
 # Regressor
-inp1 = Input(shape = [6, 6, 1])
-inp2 = Input(shape = [6, 6, 1])
+#inp1 = Input(shape = [6, 6, 1])
+#inp2 = Input(shape = [6, 6, 1])
 
-yr = Concatenate()([inp1, inp2])
+#yr = Concatenate()([inp1, inp2])
+yr1 = Input(shape = (128, ))
+yr = Reshape ((8, 8, 2))(yr1)
 
 tower0 = Conv2D(32, 1, padding = 'same')(yr)
 tower1 = Conv2D(64, 1, padding = 'same')(yr)
@@ -261,8 +265,8 @@ o = Dense(128)(o)
 o_reg = Dropout(0.2)(o)
 o_reg = Dense(1, activation = 'sigmoid')(o_reg)
 
-regressor = Model([inp1, inp2], o_reg)
-regressor_top = Model([inp1, inp2], o)
+regressor = Model([yr1], o_reg)
+regressor_top = Model([yr1], o)
 
 regressor.compile(loss = 'mse', optimizer = Adam(1e-5))
 print (regressor.summary())
@@ -271,17 +275,17 @@ def build_combined(z, y,
                    regressor,
                    regressor_top,
                    discriminator):
-    atoms_emb, bonds_emb = generator([z, y])
+    latent_new = generator([z, y])
 
     
     discriminator.trainable = False
     regressor_top.trainable = False
     regressor.trainable = False
 
-    y_pred = regressor([atoms_emb, bonds_emb])
+    y_pred = regressor([latent_new])
     #latent = regressor_top([atoms_emb, bonds_emb])
     
-    valid = discriminator([atoms_emb, bonds_emb, y])
+    valid = discriminator([latent_new, y])
 
     combined = Model([z, y], [valid, y_pred])
 
@@ -297,33 +301,33 @@ combined = build_combined(z, y,
                           regressor_top,
                           discriminator)
 
-train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
+#train_latent_new = encoder.predict([X_atoms_train, X_bonds_train])
 
-atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
-atoms_val, bonds_val, _ = encoder.predict([X_atoms_val, X_bonds_val])
+train_latent_new = encoder.predict([X_atoms_train, X_bonds_train])[2]
+print (len(train_latent_new[0]), len(train_latent_new[1]), len(train_latent_new[2]))
+val_latent_new =   encoder.predict([X_atoms_val,   X_bonds_val])[2]
 
 regressor = load_model('./../data/nns_latentonly/regressor.h5')
 regressor_top = load_model('./../data/nns_latentonly/regressor_top.h5')
 
-regressor.fit([atoms_embedding, bonds_embedding], 
+regressor.fit([train_latent_new], 
               y_train,
-              validation_data = ([atoms_val,
-                                  bonds_val],
+              validation_data = ([val_latent_new],
                                  y_val),
               batch_size = 32,
-              epochs = 1,
+              epochs = 10,
               verbose = 1)
 
 # Validating the regressor
 #====#
-atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_train, X_bonds_train])
-pred = regressor.predict([atoms_embedding, bonds_embedding])
+train_latent_new = encoder.predict([X_atoms_train, X_bonds_train])[2]
+pred = regressor.predict([train_latent_new])
 print('Current R2 on Regressor for train data: {}'.format(r2_score(y_train, pred.reshape([-1]))))
 print (pred)
 print (y_train)
 #====#
-atoms_embedding, bonds_embedding, _ = encoder.predict([X_atoms_val, X_bonds_val])
-pred = regressor.predict([atoms_embedding, bonds_embedding])
+val_latent_new = encoder.predict([X_atoms_val, X_bonds_val])[2]
+pred = regressor.predict([val_latent_new])
 print('Current R2 on Regressor for validation data: {}'.format(r2_score(y_val, pred.reshape([-1]))))
 print ("pred of validation data: ", pred )
 print ("True validation values: ", y_val)
@@ -339,8 +343,8 @@ regressor_top = load_model('./../data/nns_latentonly/regressor_top.h5')
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 200
-batch_size = 128
+epochs = 400
+batch_size = 256
 threshold = 0.2
 # number of fake indices feedback 5or50 
 reinforce_n = 5
@@ -377,10 +381,10 @@ for e in range(epochs):
         # !!!!!!!!!! SD should be 1
         batch_z = np.random.normal(0, 1, size = (batch_size, 128))
         
-        atoms_embedding, bonds_embedding, _ = encoder.predict([atoms_train, bonds_train])
-        dec_embedding = np.concatenate([atoms_embedding, bonds_embedding], axis = -1)
+        latent_new = encoder.predict([atoms_train, bonds_train])[2]
+        #dec_embedding = np.concatenate([atoms_embedding, bonds_embedding], axis = -1)
 		
-        smiles = decoder.predict(dec_embedding)[0]
+        smiles = decoder.predict(latent_new)[0]
         smiles = np.argmax(smiles, axis = 2).reshape([-1])
         c_smiles = ''
         for s in smiles:
@@ -389,19 +393,19 @@ for e in range(epochs):
         
         #print (c_smiles)
         #print (X_smiles_train[idx],"!!!!!!!!!!!!1")
-        gen_atoms_embedding, gen_bonds_embedding = generator.predict([batch_z, batch_y])
+        gen_latent_new = generator.predict([batch_z, batch_y])
         
-        r_loss = regressor.train_on_batch([atoms_embedding, bonds_embedding], batch_y)
+        r_loss = regressor.train_on_batch([latent_new], batch_y)
         R_loss.append(r_loss)
         
-        real_latent = regressor_top.predict([atoms_embedding, bonds_embedding])
-        fake_latent = regressor_top.predict([gen_atoms_embedding, gen_bonds_embedding])
+        #real_latent = regressor_top.predict([atoms_embedding, bonds_embedding])
+        #fake_latent = regressor_top.predict([gen_atoms_embedding, gen_bonds_embedding])
         
         discriminator.trainable = True
         for _ in range(3):
-            d_loss_real = discriminator.train_on_batch([atoms_embedding,bonds_embedding, batch_y],
+            d_loss_real = discriminator.train_on_batch([latent_new, batch_y],
                                                        [0.9 * np.ones((batch_size, 1))])
-            d_loss_fake = discriminator.train_on_batch([gen_atoms_embedding,gen_bonds_embedding, batch_y],
+            d_loss_fake = discriminator.train_on_batch([gen_latent_new, batch_y],
                                                        [np.zeros((batch_size, 1))])
 
         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
@@ -437,7 +441,7 @@ for e in range(epochs):
     # Reinforcement
     gen_error = []
     gen_smiles = []
-    embeddings = []
+    latentS_new = []
     sample_ys = []
     for _ in range(reinforce_sample):
         sample_y = np.random.uniform(s_min, s_max, size = [1,])
@@ -448,17 +452,17 @@ for e in range(epochs):
         # SD_original should be 1
         sample_z = np.random.normal(0, 1, size = (1, 128))
 
-        sample_atoms_embedding, sample_bonds_embedding = generator.predict([sample_z, sample_y])
-        embeddings.append((sample_atoms_embedding,
-                           sample_bonds_embedding))
-        
-        reg_pred = regressor.predict([sample_atoms_embedding, sample_bonds_embedding])
+        sample_latent_new = generator.predict([sample_z, sample_y])
+        #embeddings.append((sample_atoms_embedding,
+        #                   sample_bonds_embedding))
+        latentS_new.append(sample_latent_new)
+        reg_pred = regressor.predict([sample_latent_new])
         
         pred, desire = reg_pred[0][0], sample_y[0]
         gen_error.append(np.abs((pred - desire) / desire))
 
-        dec_embedding = np.concatenate([sample_atoms_embedding, sample_bonds_embedding], axis = -1)
-        smiles = decoder.predict(dec_embedding)[0]
+        #dec_embedding = np.concatenate([sample_atoms_embedding, sample_bonds_embedding], axis = -1)
+        smiles = decoder.predict(sample_latent_new)[0]
         smiles = np.argmax(smiles, axis = 2).reshape([-1])
         c_smiles = ''
         for s in smiles:
@@ -520,13 +524,13 @@ for e in range(epochs):
         regressor_top.trainable = False
         regressor.trainable = False
         for real_index in real_indices:
-            real_latent = regressor_top.predict([embeddings[real_index][0], embeddings[real_index][1]])
-            _ = discriminator.train_on_batch([embeddings[real_index][0], embeddings[real_index][1], sample_ys[real_index]],
+            #real_latent = regressor_top.predict([embeddings[real_index][0], embeddings[real_index][1]])
+            _ = discriminator.train_on_batch([latentS_new[real_index], sample_ys[real_index]],
                                              [0.9 * np.ones((1, 1))])
 
         for fake_index in fake_indices:
-            fake_latent = regressor_top.predict([embeddings[fake_index][0], embeddings[fake_index][1]])
-            _ = discriminator.train_on_batch([embeddings[fake_index][0], embeddings[fake_index][1] , sample_ys[fake_index]],
+            #fake_latent = regressor_top.predict([embeddings[fake_index][0], embeddings[fake_index][1]])
+            _ = discriminator.train_on_batch([latentS_new[fake_index], sample_ys[fake_index]],
                                              [np.zeros((1, 1))])
         discriminator.trainable = False
         
@@ -598,8 +602,9 @@ gen_error = []
 gen_smiles = []
 sample_ys = []
 preds = []
-gen_atoms_embedding = []
-gen_bonds_embedding = []
+#gen_atoms_embedding = []
+#gen_bonds_embedding = []
+gen_latentS_new = []
 
 regressor_top.trainable = False
 regressor.trainable = False
@@ -623,8 +628,8 @@ for hc in pbar(range(n_sample)):
         regressor_top.trainable = False
         regressor.trainable = False
 
-        sample_atoms_embedding, sample_bonds_embedding = generator.predict([sample_z, sample_y_])
-        pred = regressor.predict([sample_atoms_embedding, sample_bonds_embedding]).reshape([-1])
+        sample_latent_new = generator.predict([sample_z, sample_y_])
+        pred = regressor.predict([sample_latent_new]).reshape([-1])
         pred = pred * (s_max - s_min) + s_min
 
         gen_errors = np.abs((pred - sample_y) / sample_y).reshape([-1])
@@ -634,11 +639,12 @@ for hc in pbar(range(n_sample)):
         pred = pred[accurate]
 
         sample_y = sample_y[accurate]
-        sample_atoms_embedding = sample_atoms_embedding[accurate]
-        sample_bonds_embedding = sample_bonds_embedding[accurate]
+        #sample_atoms_embedding = sample_atoms_embedding[accurate]
+        #sample_bonds_embedding = sample_bonds_embedding[accurate]
+        sample_latent_new = sample_latent_new [accurate]
 
-        dec_embedding = np.concatenate([sample_atoms_embedding, sample_bonds_embedding], axis = -1)
-        smiles = decoder.predict(dec_embedding)[0]
+        #dec_embedding = np.concatenate([sample_atoms_embedding, sample_bonds_embedding], axis = -1)
+        smiles = decoder.predict(sample_latent_new)[0]
         smiles = np.argmax(smiles, axis = 2).reshape(smiles.shape[0], 35)
 
         generated_smiles = []
@@ -668,8 +674,9 @@ for hc in pbar(range(n_sample)):
         gen_smiles.extend(list(all_gen_smiles[idx]))
         gen_error.extend(list(gen_errors[idx]))
         sample_ys.extend(list(sample_y[idx]))
-        gen_atoms_embedding.extend(sample_atoms_embedding[idx])
-        gen_bonds_embedding.extend(sample_bonds_embedding[idx])
+        #gen_atoms_embedding.extend(sample_atoms_embedding[idx])
+        #gen_bonds_embedding.extend(sample_bonds_embedding[idx])
+        gen_latentS_new.extend(sample_latent_new[idx])
 
         preds.extend(list(pred[idx]))
     except:
@@ -723,8 +730,8 @@ print ("Fractioned_RMSE_DFT_des", Fractioned_RMSE_DFT_des)
 output = pd.DataFrame(output)
 # do not drop duplicate
 output2 = output.drop_duplicates(['SMILES'])
-gen_atoms_embedding = np.array(gen_atoms_embedding)
-gen_bonds_embedding = np.array(train_atoms_embedding)
+#gen_atoms_embedding = np.array(gen_atoms_embedding)
+#gen_bonds_embedding = np.array(train_atoms_embedding)
 
 """
 # ANALYSIS
@@ -767,8 +774,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular/Regular_500ep.csv', index = False)
-output2.to_csv('./../experiments/regular/Regular_NODUP_500ep.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_latentonly.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_latentonly.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """

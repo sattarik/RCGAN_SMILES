@@ -333,17 +333,17 @@ regressor_top.save('./../data/nns_100ksam/regressor_top.h5')
 
 regressor = load_model('./../data/nns_100ksam/regressor.h5')
 regressor_top = load_model('./../data/nns_100ksam/regressor_top.h5')
-#generator = load_model    ('./../data/nns_100ksam/generator.h5')
-#discriminator= load_model ('./../data/nns_100ksam/discriminator.h5')
+#generator = load_model    ('./../data/nns_100ksam/generator_keep13joback.h5')
+#discriminator= load_model ('./../data/nns_100ksam/discriminator_keep13joback.h5')
 
 regressor_top.trainable = False
 regressor.trainable = False
 
-epochs = 300
+epochs = 200
 batch_size = 256
-threshold = 0.2
+threshold = 0.1
 # number of fake indices feedback 5or50 
-reinforce_n = 5
+reinforce_n = 50
 # number of samples picked for reinforcement, 100or1000
 reinforce_sample = 1000
 
@@ -767,8 +767,8 @@ plt.savefig("test_bonds_dist.png")
 """
 output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular/Regular_300ep_100ksam.csv', index = False)
-output2.to_csv('./../experiments/regular/Regular_NODUP_300ep_100ksam.csv', index = False)
+output.to_csv ('./../experiments/regular/Regular_100ksam_new.csv', index = False)
+output2.to_csv('./../experiments/regular/Regular_NODUP_100ksam_new.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """

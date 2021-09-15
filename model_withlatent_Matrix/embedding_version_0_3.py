@@ -244,9 +244,9 @@ model.fit([X_atoms_train, X_bonds_train],
                     batch_size = 32,
                     verbose = 1)
 """
-#encoder = load_model('./../data/nns_latentonly/encoder.h5')
-#decoder = load_model('./../data/nns_latentonly/decoder.h5')
-#model = load_model  ('./../data/nns_latentonly/ae_model.h5')
+encoder = load_model('./../data/nns_latentonly/encoder.h5')
+decoder = load_model('./../data/nns_latentonly/decoder.h5')
+model = load_model  ('./../data/nns_latentonly/ae_model.h5')
 
 model.compile(optimizer = Adam(learning_rate = 9e-5),
               loss = ['binary_crossentropy', 'mse'])
@@ -256,13 +256,13 @@ model.fit([X_atoms_train, X_bonds_train],
                     [X_smiles_train, y_train],
                     validation_data = ([X_atoms_test, X_bonds_test],
                                        [X_smiles_test, y_test]),
-                    epochs = 1024,
+                    epochs = 1,
                     batch_size = 32,
                     verbose = 1)
 
-model.save  ('./../data/nns_latentonly/ae_model.h5')
-encoder.save('./../data/nns_latentonly/encoder.h5')
-decoder.save('./../data/nns_latentonly/decoder.h5')
+#model.save  ('./../data/nns_latentonly/ae_model.h5')
+#encoder.save('./../data/nns_latentonly/encoder.h5')
+#decoder.save('./../data/nns_latentonly/decoder.h5')
 
 for i in [5, 10, 32, 88, 99]:
     plt.subplot(121)
@@ -286,6 +286,6 @@ for i in [5, 10, 32, 88, 99]:
     plt.show()
     plt.savefig("smiles_{}_test.png".format(i))
 
-model.save  ('./../data/nns_latentonly/ae_model.h5')
-encoder.save('./../data/nns_latentonly/encoder.h5')
-decoder.save('./../data/nns_latentonly/decoder.h5')
+#model.save  ('./../data/nns_latentonly/ae_model.h5')
+#encoder.save('./../data/nns_latentonly/encoder.h5')
+#decoder.save('./../data/nns_latentonly/decoder.h5')

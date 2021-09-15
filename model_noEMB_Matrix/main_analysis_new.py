@@ -35,7 +35,7 @@ from chainer_chemistry.datasets.numpy_tuple_dataset import NumpyTupleDataset
 from chainer_chemistry.dataset.preprocessors import GGNNPreprocessor
 
 # load the generated SMILES from the RCGAN Model
-csv_name = './../experiments/regular/Regular_60ksam_13joback.csv'
+csv_name = './../experiments/regular/Regular_NODUP_100ksam_validity.csv'
 gen_SMILES = pd.read_csv(csv_name)
 
 jobacks = []
